@@ -7,6 +7,16 @@
 #include <unistd.h>
 #include <string>
 #include <algorithm>
+#include <csignal>
+
+void restore_cursor() {
+    const char show_cursor[] = "\033[?25h";
+    write(STDOUT_FILENO, show_cursor, sizeof(show_cursor) - 1);
+}
+void signal_handler(int signum) {
+    restore_cursor();
+    _exit(128 + signum);
+}
 
 int get_random(int min_val, int max_val) {
     static thread_local std::mt19937 gen(std::random_device{}());
@@ -29,6 +39,10 @@ std::vector<char> character_row(std::vector<int>& valid_rows, int height) {
 }
 
 int main() {
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+    std::atexit(restore_cursor);
+
     std::cout << "\033[?25l";
 
     int prev_width = 0;
